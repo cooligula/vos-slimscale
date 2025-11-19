@@ -1,15 +1,23 @@
-
 name: install-slimbook
 type: shell
 commands:
   - echo ">>> Setting up Slimbook Suite..."
   - mkdir -p --mode=0755 /usr/share/keyrings
-  # 1. Manually fetch the Launchpad GPG key for Slimbook
+
+  # 1. Add the Slimbook PPA (Jammy)
   - curl -fsSL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xBE80F1EEB3838E61E42091B378A22399981017FC" | gpg --dearmor -o /usr/share/keyrings/slimbook-archive-keyring.gpg
-  # 2. Add the Repo
-  # IMPORTANT: We force 'jammy' (Ubuntu 22.04) because Slimbook packages are compatible 
-  # but not explicitly labeled for Debian Sid.
   - echo "deb [signed-by=/usr/share/keyrings/slimbook-archive-keyring.gpg] https://ppa.launchpadcontent.net/slimbook/slimbook/ubuntu jammy main" | tee /etc/apt/sources.list.d/slimbook.list
-  # 3. Update and Install
+
   - apt-get update
+
+  # 2. FIX: Manually install libdlib19 from Ubuntu Jammy
+  # This specific version (19.10-3.1) is required to satisfy the slimbookface dependency.
+  - echo ">>> Patching libdlib19 dependency..."
+  - wget http://archive.ubuntu.com/ubuntu/pool/universe/d/dlib/libdlib19_19.10-3.1_amd64.deb
+  - apt-get install -y ./libdlib19_19.10-3.1_amd64.deb
+
+  # 3. Install Slimbook Tools
   - apt-get install -y slimbookbattery slimbookface slimbook slimbookamdcontroller slimbookgestures
+
+  # 4. Cleanup
+  - rm -f libdlib19_19.10-3.1_amd64.deb
