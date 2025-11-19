@@ -1,0 +1,15 @@
+
+name: install-slimbook
+type: shell
+commands:
+  - echo ">>> Setting up Slimbook Suite..."
+  - mkdir -p --mode=0755 /usr/share/keyrings
+  # 1. Manually fetch the Launchpad GPG key for Slimbook
+  - curl -fsSL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xBE80F1EEB3838E61E42091B378A22399981017FC" | gpg --dearmor -o /usr/share/keyrings/slimbook-archive-keyring.gpg
+  # 2. Add the Repo
+  # IMPORTANT: We force 'jammy' (Ubuntu 22.04) because Slimbook packages are compatible 
+  # but not explicitly labeled for Debian Sid.
+  - echo "deb [signed-by=/usr/share/keyrings/slimbook-archive-keyring.gpg] https://ppa.launchpadcontent.net/slimbook/slimbook/ubuntu jammy main" | tee /etc/apt/sources.list.d/slimbook.list
+  # 3. Update and Install
+  - apt-get update
+  - apt-get install -y slimbookbattery slimbookface slimbook slimbookamdcontroller slimbookgestures

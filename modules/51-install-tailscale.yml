@@ -1,0 +1,12 @@
+name: install-tailscale
+type: shell
+commands:
+  - echo ">>> Setting up Tailscale..."
+  - mkdir -p --mode=0755 /usr/share/keyrings
+  # Fetch Key
+  - curl -fsSL https://pkgs.tailscale.com/stable/debian/sid.noarmor.gpg | tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null
+  # Add Repo List
+  - curl -fsSL https://pkgs.tailscale.com/stable/debian/sid.tailscale-keyring.list | tee /etc/apt/sources.list.d/tailscale.list
+  # Install
+  - apt-get update
+  - apt-get install -y tailscale
