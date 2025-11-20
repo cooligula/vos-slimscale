@@ -30,10 +30,10 @@ stages:
   #    packages:
   #    - vim
 
-  - name: install-debs
-    type: includes
-    includes:
-      - modules/50-install-debs.yml
+  #- name: install-debs
+  #  type: includes
+  #  includes:
+  #    - modules/50-install-debs.yml
 
   - name: install-tailscale
     type: includes
@@ -45,7 +45,7 @@ stages:
   - name: install-slimbook
     type: includes
     includes:
-      - modules/51-install-slimbook.yml
+      - modules/51-install-slimbook_mod.yml
 
   # Put your custom actions above this comment
 
