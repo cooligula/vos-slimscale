@@ -24,11 +24,16 @@ stages:
 
   # Put your custom actions below this comment
 
-  - name: example-packages # Sample module using the built-in Apt module to install packages
-    type: apt
-    source:
-      packages:
-      - vim
+  #- name: example-packages # Sample module using the built-in Apt module to install packages
+  #  type: apt
+  #  source:
+  #    packages:
+  #    - vim
+
+  - name: install-debs
+    type: includes
+    includes:
+      - modules/50-install-debs.yml
 
   - name: install-tailscale
     type: includes
