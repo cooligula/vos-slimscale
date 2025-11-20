@@ -1,39 +1,58 @@
 name: install-slimbook
 type: shell
 commands:
-  - echo ">>> Setting up Slimbook Suite..."
-  - mkdir -p --mode=0755 /usr/share/keyrings
-  
-  # 1. Add PPA
+
+  # Slimbook PPA (For the Service & Gestures)
   - curl -fsSL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xBE80F1EEB3838E61E42091B378A22399981017FC" | gpg --dearmor -o /usr/share/keyrings/slimbook-archive-keyring.gpg
   - echo "deb [signed-by=/usr/share/keyrings/slimbook-archive-keyring.gpg] https://ppa.launchpadcontent.net/slimbook/slimbook/ubuntu jammy main" | tee /etc/apt/sources.list.d/slimbook.list
-  - apt-get update
-
-  # 2. Download the 3 required DEBs
-  - mkdir -p /deb-pkgs
-  - echo ">>> Downloading dependencies..."
-  - wget -O /deb-pkgs/1-libdlib-data.deb http://archive.ubuntu.com/ubuntu/pool/universe/d/dlib/libdlib-data_19.10-3.1_all.deb
-  - wget -O /deb-pkgs/2-libjpeg-turbo8.deb http://archive.ubuntu.com/ubuntu/pool/main/libj/libjpeg-turbo/libjpeg-turbo8_2.1.2-0ubuntu1_amd64.deb
-  - wget -O /deb-pkgs/3-libdlib19.deb http://archive.ubuntu.com/ubuntu/pool/universe/d/dlib/libdlib19_19.10-3.1_amd64.deb
-
-  # 3. THE FIX: Repack libdlib19 to depend on 'libjpeg-turbo8' instead of 'libjpeg8 (>= 8c)'
-  - echo ">>> Patching libdlib19 control file..."
-  - mkdir -p /tmp/dlib-mod
-  # Extract the deb
-  - dpkg-deb -R /deb-pkgs/3-libdlib19.deb /tmp/dlib-mod
-  # Use sed to replace the impossible dependency with the real package name
-  - sed -i 's/libjpeg8 (>= 8c)/libjpeg-turbo8/g' /tmp/dlib-mod/DEBIAN/control
-  # Rebuild the deb
-  - dpkg-deb -b /tmp/dlib-mod /deb-pkgs/3-libdlib19-fixed.deb
-  # Remove the broken original
-  - rm /deb-pkgs/3-libdlib19.deb
-
-  # 4. Install the fixed set
-  - echo ">>> Installing patched packages..."
-  # The glob now picks up: 1-libdlib-data, 2-libjpeg-turbo8, and 3-libdlib19-fixed
-  - dpkg -i /deb-pkgs/*.deb
   
-  # 5. Finalize
-  - apt-get install -f -y
-  - apt-get install -y slimbookbattery slimbookface slimbook slimbookamdcontroller slimbookgestures
-  - rm -rf /deb-pkgs /tmp/dlib-mod
+  - apt-get update
+  - apt-get install -y slimbook slimbookgestures
+
+  - mkdir -p /sources
+  - cd /sources
+
+  # --- 1. SLIMBOOK AMD CONTROLLER (Source Fix: Python Version) ---
+  - echo ">>> Installing AMD Controller from Source..."
+  - git clone https://github.com/Slimbook-Team/slimbookamdcontroller.git
+  - cd slimbookamdcontroller
+  - mkdir -p /usr/share/slimbookamdcontroller
+  - cp -r src/* /usr/share/slimbookamdcontroller/
+  - cp slimbookamdcontroller.desktop /usr/share/applications/
+  # Create launcher
+  - echo '#!/bin/bash\ncd /usr/share/slimbookamdcontroller/src/ && python3 slimbookamdcontroller.py "$@"' > /usr/bin/slimbookamdcontroller
+  - chmod +x /usr/bin/slimbookamdcontroller
+  # Fix the python module that caused the crash
+  - pip3 install --break-system-packages --upgrade pyamdgpuinfo
+  - cd ..
+
+  # --- 2. SLIMBOOK BATTERY (Source Fix: Ayatana/Icon Support) ---
+  - echo ">>> Installing Slimbook Battery from Source..."
+  - git clone https://github.com/Slimbook-Team/slimbookbattery.git
+  - cd slimbookbattery
+  - mkdir -p /usr/share/slimbookbattery
+  - cp -r src/* /usr/share/slimbookbattery/
+  - cp slimbookbattery.desktop /usr/share/applications/
+  # Create launcher
+  - echo '#!/bin/bash\ncd /usr/share/slimbookbattery/ && python3 slimbookbattery.py "$@"' > /usr/bin/slimbookbattery
+  - chmod +x /usr/bin/slimbookbattery
+  # Install Schemas
+  - cp slimbookbattery.gschema.xml /usr/share/glib-2.0/schemas/
+  - glib-compile-schemas /usr/share/glib-2.0/schemas/
+  
+  # AUTO-PATCH: Force AppIndicator to use Ayatana if needed
+  # This command finds "import AppIndicator3" and adds the Ayatana require line before it
+  - find /usr/share/slimbookbattery -name "*.py" -print0 | xargs -0 sed -i "s/from gi.repository import AppIndicator3/import gi\ngi.require_version('AyatanaAppIndicator3', '0.1')\nfrom gi.repository import AyatanaAppIndicator3 as AppIndicator3/g" || true
+  - cd ..
+
+  # --- 3. SLIMBOOK FACE (Source Fix: Dlib Dependencies) ---
+  - echo ">>> Installing Slimbook Face from Source..."
+  - git clone https://github.com/Slimbook-Team/slimbookface.git
+  - cd slimbookface
+  - mkdir -p /usr/share/slimbookface
+  - cp -r * /usr/share/slimbookface/
+  - cp slimbookface.desktop /usr/share/applications/
+  # Create launcher
+  - echo '#!/bin/bash\ncd /usr/share/slimbookface/ && python3 slimbookface.py "$@"' > /usr/bin/slimbookface
+  - chmod +x /usr/bin/slimbookface
+  - cd ..

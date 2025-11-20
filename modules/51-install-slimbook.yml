@@ -3,15 +3,37 @@ type: shell
 commands:
   - echo ">>> Setting up Slimbook Suite..."
   - mkdir -p --mode=0755 /usr/share/keyrings
-
-  # 1. Add the Slimbook PPA (Jammy)
+  
+  # 1. Add PPA
   - curl -fsSL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xBE80F1EEB3838E61E42091B378A22399981017FC" | gpg --dearmor -o /usr/share/keyrings/slimbook-archive-keyring.gpg
   - echo "deb [signed-by=/usr/share/keyrings/slimbook-archive-keyring.gpg] https://ppa.launchpadcontent.net/slimbook/slimbook/ubuntu jammy main" | tee /etc/apt/sources.list.d/slimbook.list
-
   - apt-get update
 
-  # 3. Install Slimbook Tools
-  - apt-get install -y slimbookbattery slimbookface slimbook slimbookamdcontroller slimbookgestures
+  # 2. Download the 3 required DEBs
+  - mkdir -p /deb-pkgs
+  - echo ">>> Downloading dependencies..."
+  - wget -O /deb-pkgs/1-libdlib-data.deb http://archive.ubuntu.com/ubuntu/pool/universe/d/dlib/libdlib-data_19.10-3.1_all.deb
+  - wget -O /deb-pkgs/2-libjpeg-turbo8.deb http://archive.ubuntu.com/ubuntu/pool/main/libj/libjpeg-turbo/libjpeg-turbo8_2.1.2-0ubuntu1_amd64.deb
+  - wget -O /deb-pkgs/3-libdlib19.deb http://archive.ubuntu.com/ubuntu/pool/universe/d/dlib/libdlib19_19.10-3.1_amd64.deb
 
-  # 4. Cleanup
-  - rm -f libdlib19_19.10-3.1_amd64.deb
+  # 3. THE FIX: Repack libdlib19 to depend on 'libjpeg-turbo8' instead of 'libjpeg8 (>= 8c)'
+  - echo ">>> Patching libdlib19 control file..."
+  - mkdir -p /tmp/dlib-mod
+  # Extract the deb
+  - dpkg-deb -R /deb-pkgs/3-libdlib19.deb /tmp/dlib-mod
+  # Use sed to replace the impossible dependency with the real package name
+  - sed -i 's/libjpeg8 (>= 8c)/libjpeg-turbo8/g' /tmp/dlib-mod/DEBIAN/control
+  # Rebuild the deb
+  - dpkg-deb -b /tmp/dlib-mod /deb-pkgs/3-libdlib19-fixed.deb
+  # Remove the broken original
+  - rm /deb-pkgs/3-libdlib19.deb
+
+  # 4. Install the fixed set
+  - echo ">>> Installing patched packages..."
+  # The glob now picks up: 1-libdlib-data, 2-libjpeg-turbo8, and 3-libdlib19-fixed
+  - dpkg -i /deb-pkgs/*.deb
+  
+  # 5. Finalize
+  - apt-get install -f -y
+  - apt-get install -y slimbookbattery slimbookface slimbook slimbookamdcontroller slimbookgestures
+  - rm -rf /deb-pkgs /tmp/dlib-mod
