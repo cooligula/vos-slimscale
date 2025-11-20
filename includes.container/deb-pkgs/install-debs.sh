@@ -1,16 +1,10 @@
 #!/bin/bash
 set -e
-for file in /deb-pkgs/*; do
-    if [ ! -f "$file" ]; then
-        continue
-    fi
 
-    extension=${file##*.}
-    if [ $extension != "deb" ]; then
-        continue
-    fi
+# The shell expands *.deb to "1-libjpeg... 2-libdlib..." automatically.
+# dpkg installs them in that order, but keeps the transaction open so 
+# dependencies resolve instantly.
+dpkg -i /deb-pkgs/*.deb
 
-    echo "installing $file"
-
-    apt-get install -y $file
-done
+# Only fix dependencies AFTER both are installed
+apt-get install -f -y
