@@ -45,7 +45,7 @@ stages:
   - name: install-slimbook
     type: includes
     includes:
-      - modules/51-install-slimbook_mod.yml
+      - modules/51-install-slimbook.yml
 
   # Put your custom actions above this comment
 
