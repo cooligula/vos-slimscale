@@ -18,4 +18,4 @@ commands:
   # 4. Install the Suite
   # Since we are using the official repo, dependencies like libdlib should resolve naturally
   - apt-get update
-  - apt-get install -y slimbookbattery slimbookface slimbook slimbookamdcontroller
+  - apt-get install -y slimbook-meta-common slimbook-meta-evo slimbookbattery slimbook
